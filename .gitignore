@@ -1,43 +1,48 @@
+# Игнорируем весь target
+target/*
+
+# Разрешаем пушить только папку с Allure отчетом
+!target/site/
+!target/site/allure-maven-plugin/
+!target/allure-results
 .allure/
-target/
-.idea/
-!target/allure-report
-!target/site/allure-maven-plugin
+
+# Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+
+# Build directories inside src (обычно игнорируются)
+**/src/main/**/target/
+**/src/test/**/target/
+**/src/main/**/build/
+**/src/test/**/build/
+
+# Kotlin
 .kotlin
 
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
-*.iws
+# IntelliJ IDEA
+.idea/
 *.iml
+*.iws
 *.ipr
 
-### Eclipse ###
-.apt_generated
+# Eclipse
 .classpath
-.factorypath
 .project
-.settings
+.settings/
+.apt_generated
+.factorypath
 .springBeans
 .sts4-cache
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# VS Code
 .vscode/
 
-### Mac OS ###
+# Mac OS
 .DS_Store
