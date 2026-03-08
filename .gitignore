@@ -1,4 +1,6 @@
+.allure/
 target/
+.idea/
 !target/allure-report
 !target/site/allure-maven-plugin
 !.mvn/wrapper/maven-wrapper.jar
