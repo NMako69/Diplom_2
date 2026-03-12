@@ -2,8 +2,6 @@
 target/*
 
 # Разрешаем пушить только папку с Allure отчетом
-!target/site/
-!target/site/allure-maven-plugin/
 !target/allure-results
 .allure/
 

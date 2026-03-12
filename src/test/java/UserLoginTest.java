@@ -2,10 +2,13 @@ import io.qameta.allure.Description;
 import io.restassured.response.Response;
 import models.CreateUser;
 import models.UserLogin;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import io.qameta.allure.junit4.DisplayName;
 import utils.UserGenerator;
+
+import static org.apache.http.HttpStatus.*;
+import static org.hamcrest.Matchers.equalTo;
 
 public class UserLoginTest extends BaseTest {
 
@@ -15,45 +18,52 @@ public class UserLoginTest extends BaseTest {
     public void createUser() {
 
         CreateUser user = UserGenerator.randomUser(PASSWORD);
+
         email = user.getEmail();
 
         Response response = userClient.registerUser(user);
 
-        token = response.path("accessToken");
+        token = response.then()
+                .extract()
+                .path("accessToken");
     }
 
     @Test
+    @DisplayName("Успешная авторизация пользователя")
     @Description("Проверка входа существующего пользователя")
-    public void loginSuccess() {
+    public void loginSuccessTest() {
 
         UserLogin login = new UserLogin(email, PASSWORD);
 
-        Response response = userClient.loginUser(login);
-
-        Assert.assertEquals(200, response.statusCode());
-        Assert.assertTrue(response.path("success"));
+        userClient.loginUser(login)
+                .then()
+                .statusCode(SC_OK)
+                .body("success", equalTo(true));
     }
 
     @Test
+    @DisplayName("Ошибка авторизации при неправильном пароле")
     @Description("Проверка ошибки авторизации при неправильном пароле")
-    public void loginWrongPassword() {
+    public void loginWrongPasswordTest() {
 
         UserLogin login = new UserLogin(email, "wrongPassword");
 
-        Response response = userClient.loginUser(login);
-
-        Assert.assertEquals(401, response.statusCode());
-        Assert.assertFalse(response.path("success"));
+        userClient.loginUser(login)
+                .then()
+                .statusCode(SC_UNAUTHORIZED)
+                .body("success", equalTo(false));
     }
+
     @Test
+    @DisplayName("Ошибка авторизации при неправильном email")
     @Description("Проверка ошибки авторизации при неправильном логине")
-    public void loginWrongEmail() {
+    public void loginWrongEmailTest() {
 
         UserLogin login = new UserLogin("wrongemail@test.ru", PASSWORD);
 
-        Response response = userClient.loginUser(login);
-
-        Assert.assertEquals(401, response.statusCode());
-        Assert.assertFalse(response.path("success"));
+        userClient.loginUser(login)
+                .then()
+                .statusCode(SC_UNAUTHORIZED)
+                .body("success", equalTo(false));
     }
 }

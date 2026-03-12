@@ -1,81 +1,94 @@
 import io.qameta.allure.Description;
 import io.restassured.response.Response;
 import models.CreateUser;
-import org.junit.Assert;
 import org.junit.Test;
+import io.qameta.allure.junit4.DisplayName;
 import utils.UserGenerator;
+
+import static org.apache.http.HttpStatus.*;
+import static org.hamcrest.Matchers.equalTo;
 
 public class UserCreateTest extends BaseTest {
 
     @Test
+    @DisplayName("Успешная регистрация нового пользователя")
     @Description("Проверка успешной регистрации нового уникального пользователя")
-    public void createUniqueUser() {
+    public void createUniqueUserTest() {
 
-        // создаём случайного пользователя через Faker
         CreateUser user = UserGenerator.randomUser(PASSWORD);
 
         Response response = userClient.registerUser(user);
 
-        Assert.assertEquals(200, response.statusCode());
-        Assert.assertTrue(response.path("success"));
+        response.then()
+                .statusCode(SC_OK)
+                .body("success", equalTo(true));
 
-        token = response.path("accessToken");
+        token = response.then()
+                .extract()
+                .path("accessToken");
     }
 
     @Test
+    @DisplayName("Ошибка при повторной регистрации пользователя")
     @Description("Проверка что нельзя создать одного пользователя дважды")
-    public void createDuplicateUser() {
+    public void createDuplicateUserTest() {
 
         CreateUser user = UserGenerator.randomUser(PASSWORD);
 
         Response firstResponse = userClient.registerUser(user);
-        token = firstResponse.path("accessToken");
 
-        Response secondResponse = userClient.registerUser(user);
+        token = firstResponse.then()
+                .extract()
+                .path("accessToken");
 
-        Assert.assertEquals(403, secondResponse.statusCode());
-        Assert.assertFalse(secondResponse.path("success"));
+        userClient.registerUser(user)
+                .then()
+                .statusCode(SC_FORBIDDEN)
+                .body("success", equalTo(false));
     }
 
     @Test
+    @DisplayName("Ошибка при регистрации без email")
     @Description("Проверка ошибки при создании пользователя без email")
-    public void cannotCreateUserWithoutEmail() {
+    public void cannotCreateUserWithoutEmailTest() {
 
         CreateUser user = UserGenerator.userWithoutEmail(PASSWORD);
 
-        Response response = userClient.registerUser(user);
-
-        Assert.assertEquals(403, response.statusCode());
-        Assert.assertFalse(response.path("success"));
-        Assert.assertEquals("Email, password and name are required fields",
-                response.path("message"));
+        userClient.registerUser(user)
+                .then()
+                .statusCode(SC_FORBIDDEN)
+                .body("success", equalTo(false))
+                .body("message",
+                        equalTo("Email, password and name are required fields"));
     }
 
     @Test
+    @DisplayName("Ошибка при регистрации без password")
     @Description("Проверка ошибки при создании пользователя без password")
-    public void cannotCreateUserWithoutPassword() {
+    public void cannotCreateUserWithoutPasswordTest() {
 
         CreateUser user = UserGenerator.userWithoutPassword();
 
-        Response response = userClient.registerUser(user);
-
-        Assert.assertEquals(403, response.statusCode());
-        Assert.assertFalse(response.path("success"));
-        Assert.assertEquals("Email, password and name are required fields",
-                response.path("message"));
+        userClient.registerUser(user)
+                .then()
+                .statusCode(SC_FORBIDDEN)
+                .body("success", equalTo(false))
+                .body("message",
+                        equalTo("Email, password and name are required fields"));
     }
 
     @Test
+    @DisplayName("Ошибка при регистрации без name")
     @Description("Проверка ошибки при создании пользователя без name")
-    public void cannotCreateUserWithoutName() {
+    public void cannotCreateUserWithoutNameTest() {
 
         CreateUser user = UserGenerator.userWithoutName(PASSWORD);
 
-        Response response = userClient.registerUser(user);
-
-        Assert.assertEquals(403, response.statusCode());
-        Assert.assertFalse(response.path("success"));
-        Assert.assertEquals("Email, password and name are required fields",
-                response.path("message"));
+        userClient.registerUser(user)
+                .then()
+                .statusCode(SC_FORBIDDEN)
+                .body("success", equalTo(false))
+                .body("message",
+                        equalTo("Email, password and name are required fields"));
     }
 }

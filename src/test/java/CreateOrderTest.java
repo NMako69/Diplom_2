@@ -2,12 +2,15 @@ import io.qameta.allure.Description;
 import io.restassured.response.Response;
 import models.CreateOrder;
 import models.CreateUser;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import io.qameta.allure.junit4.DisplayName;
 import utils.UserGenerator;
 
 import java.util.List;
+
+import static org.apache.http.HttpStatus.*;
+import static org.hamcrest.Matchers.equalTo;
 
 public class CreateOrderTest extends BaseTest {
 
@@ -19,7 +22,10 @@ public class CreateOrderTest extends BaseTest {
         CreateUser user = UserGenerator.randomUser(PASSWORD);
 
         Response response = userClient.registerUser(user);
-        token = response.path("accessToken");
+
+        token = response.then()
+                .extract()
+                .path("accessToken");
 
         Response ingredientsResponse = orderClient.getIngredients();
 
@@ -27,64 +33,70 @@ public class CreateOrderTest extends BaseTest {
     }
 
     @Test
+    @DisplayName("Создание заказа авторизованным пользователем")
     @Description("Проверка создания заказа авторизованным пользователем")
-    public void createOrderAuthorized() {
+    public void createOrderAuthorizedTest() {
 
         CreateOrder order = new CreateOrder(List.of(ingredients.get(0)));
 
-        Response response = orderClient.createOrderAuthorized(order, token);
-
-        Assert.assertEquals(200, response.statusCode());
-        Assert.assertTrue(response.path("success"));
+        orderClient.createOrderAuthorized(order, token)
+                .then()
+                .statusCode(SC_OK)
+                .body("success", equalTo(true));
     }
 
     @Test
+    @DisplayName("Создание заказа без авторизации")
     @Description("Проверка создания заказа без авторизации")
-    public void createOrderWithoutAuth() {
+    public void createOrderWithoutAuthTest() {
 
         CreateOrder order = new CreateOrder(List.of(ingredients.get(1)));
 
-        Response response = orderClient.createOrder(order);
-
-        Assert.assertEquals(200, response.statusCode());
-        Assert.assertTrue(response.path("success"));
+        orderClient.createOrder(order)
+                .then()
+                .statusCode(SC_OK)
+                .body("success", equalTo(true));
     }
 
     @Test
+    @DisplayName("Ошибка при создании заказа без ингредиентов")
     @Description("Проверка ошибки если ингредиенты не переданы")
-    public void createOrderWithoutIngredients() {
+    public void createOrderWithoutIngredientsTest() {
 
         CreateOrder order = new CreateOrder(List.of());
 
-        Response response = orderClient.createOrder(order);
-
-        Assert.assertEquals(400, response.statusCode());
-        Assert.assertFalse(response.path("success"));
+        orderClient.createOrder(order)
+                .then()
+                .statusCode(SC_BAD_REQUEST)
+                .body("success", equalTo(false))
+                .body("message", equalTo("Ingredient ids must be provided"));
     }
+
     @Test
+    @DisplayName("Создание заказа с несколькими ингредиентами")
     @Description("Проверка создания заказа с ингредиентами")
-    public void createOrderWithIngredients() {
+    public void createOrderWithIngredientsTest() {
 
         CreateOrder order = new CreateOrder(List.of(
                 ingredients.get(0),
                 ingredients.get(1)
         ));
 
-        Response response = orderClient.createOrder(order);
-
-        Assert.assertEquals(200, response.statusCode());
-        Assert.assertTrue(response.path("success"));
+        orderClient.createOrder(order)
+                .then()
+                .statusCode(SC_OK)
+                .body("success", equalTo(true));
     }
+
     @Test
+    @DisplayName("Ошибка при создании заказа с неверным хешем ингредиента")
     @Description("Проверка ошибки при создании заказа с неверным хешем ингредиентов")
-    public void createOrderWithInvalidIngredientHash() {
+    public void createOrderWithInvalidIngredientHashTest() {
 
-        CreateOrder order = new CreateOrder(List.of(
-                "invalidIngredientHash123"
-        ));
+        CreateOrder order = new CreateOrder(List.of("invalidIngredientHash123"));
 
-        Response response = orderClient.createOrder(order);
-
-        Assert.assertEquals(500, response.statusCode());
+        orderClient.createOrder(order)
+                .then()
+                .statusCode(SC_INTERNAL_SERVER_ERROR);
     }
 }
